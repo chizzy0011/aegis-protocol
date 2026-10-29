@@ -1,0 +1,21 @@
+{
+  "name": "@aegis-protocol/margin-watcher",
+  "version": "0.1.0",
+  "description": "Background Oracle Margin Watcher & Atomic Liquidator Daemon for Aegis Protocol",
+  "main": "./dist/index.js",
+  "scripts": {
+    "start": "tsc && node dist/index.js",
+    "build": "tsc"
+  },
+  "author": "chizzy0011 <296515658+chizzy0011@users.noreply.github.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@aegis-protocol/sdk": "*",
+    "@stellar/stellar-sdk": "^12.3.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "aegis-protocol",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Institutional Collateral Clearing, Bilateral DvP Repo, and Emerging Market Structured Credit on Stellar Soroban",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "cargo test && npm run test --workspaces",
+    "contracts:build": "cargo build --target wasm32-unknown-unknown --release",
+    "contracts:test": "cargo test",
+    "seed:issues": "node issues/seed-issues.js"
+  },
+  "keywords": [
+    "stellar",
+    "soroban",
+    "repo",
+    "dvp",
+    "rwa",
+    "structured-credit",
+    "trade-finance",
+    "fiat-anchors",
+    "canton"
+  ],
+  "author": "chizzy0011 <296515658+chizzy0011@users.noreply.github.com>",
+  "license": "Apache-2.0"
+}

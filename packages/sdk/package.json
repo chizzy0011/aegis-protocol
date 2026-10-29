@@ -1,0 +1,28 @@
+{
+  "name": "@aegis-protocol/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Aegis Protocol Institutional Repo Clearing & Emerging Market Structured Credit",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test"
+  },
+  "author": "chizzy0011 <296515658+chizzy0011@users.noreply.github.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@stellar/stellar-sdk": "^12.3.0",
+    "ethers": "^6.13.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^22.0.0"
+  }
+}

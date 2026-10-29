@@ -1,0 +1,31 @@
+name: SDK & Web CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: TypeScript Build & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build SDK
+        run: npm run build --workspace=@aegis-protocol/sdk
+
+      - name: Build Margin Watcher
+        run: npm run build --workspace=@aegis-protocol/margin-watcher
+
+      - name: Build Web App
+        run: npm run build --workspace=@aegis-protocol/web
