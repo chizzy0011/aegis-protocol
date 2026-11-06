@@ -2,50 +2,84 @@
 
 use super::*;
 use soroban_sdk::{
-    testutils::Address as _,
+    testutils::{Address as _, Ledger},
     Address, Env,
 };
 
-#[test]
-fn test_compliance_and_sep8_verification() {
+fn setup<'a>() -> (Env, AegisComplianceContractClient<'a>, Address) {
     let env = Env::default();
     env.mock_all_auths();
-
+    env.ledger().with_mut(|li| li.timestamp = 1_000);
+    let id = env.register(AegisComplianceContract, ());
+    let client = AegisComplianceContractClient::new(&env, &id);
     let admin = Address::generate(&env);
-    let institutional_investor = Address::generate(&env);
-    let retail_investor = Address::generate(&env);
-
-    let contract_id = env.register(AegisComplianceContract, ());
-    let client = AegisComplianceContractClient::new(&env, &contract_id);
-
     client.initialize(&admin);
+    (env, client, admin)
+}
 
-    let future_time = 10_000_000;
-    // Onboard institutional investor (Tier 3, US = 840)
-    client.set_investor_tier(&admin, &institutional_investor, &3, &840, &future_time);
-    // Onboard retail investor (Tier 1)
-    client.set_investor_tier(&admin, &retail_investor, &1, &840, &future_time);
+#[test]
+fn test_tier_of_reflects_registration_sanctions_and_expiry() {
+    let (env, client, admin) = setup();
+    let investor = Address::generate(&env);
 
-    // Verify institutional access
+    assert_eq!(client.tier_of(&investor), 0);
+
+    client.set_investor_tier(&admin, &investor, &2, &566, &2_000);
+    assert_eq!(client.tier_of(&investor), 2);
+
+    client.set_sanction_status(&admin, &investor, &true);
+    assert_eq!(client.tier_of(&investor), 0);
     assert_eq!(
-        client.verify_institutional_access(&institutional_investor),
-        true
+        client.try_check_transfer(&investor, &investor),
+        Err(Ok(ComplianceError::SanctionedAddress))
+    );
+
+    client.set_sanction_status(&admin, &investor, &false);
+    assert_eq!(client.tier_of(&investor), 2);
+
+    env.ledger().with_mut(|li| li.timestamp = 2_001);
+    assert_eq!(client.tier_of(&investor), 0);
+    assert_eq!(
+        client.try_verify_institutional_access(&investor),
+        Err(Ok(ComplianceError::KycExpired))
+    );
+}
+
+#[test]
+fn test_institutional_access_and_transfer_checks() {
+    let (env, client, admin) = setup();
+    let fund = Address::generate(&env);
+    let desk = Address::generate(&env);
+    let stranger = Address::generate(&env);
+
+    client.set_investor_tier(&admin, &fund, &3, &840, &10_000);
+    client.set_investor_tier(&admin, &desk, &1, &566, &10_000);
+
+    assert!(client.verify_institutional_access(&fund));
+    assert!(!client.verify_institutional_access(&desk));
+    assert!(client.check_transfer(&fund, &desk));
+    assert_eq!(
+        client.try_check_transfer(&fund, &stranger),
+        Err(Ok(ComplianceError::InvestorNotFound))
+    );
+}
+
+#[test]
+fn test_only_admin_can_register_and_tiers_are_validated() {
+    let (env, client, admin) = setup();
+    let impostor = Address::generate(&env);
+    let investor = Address::generate(&env);
+
+    assert_eq!(
+        client.try_set_investor_tier(&impostor, &investor, &3, &840, &10_000),
+        Err(Ok(ComplianceError::Unauthorized))
     );
     assert_eq!(
-        client.verify_institutional_access(&retail_investor),
-        false
+        client.try_set_investor_tier(&admin, &investor, &4, &840, &10_000),
+        Err(Ok(ComplianceError::InsufficientTier))
     );
-
-    // Verify SEP-8 compliance check
-    let sep8_ok = client.check_sep8_compliance(
-        &institutional_investor,
-        &retail_investor,
-        &1_000_000,
+    assert_eq!(
+        client.try_initialize(&admin),
+        Err(Ok(ComplianceError::AlreadyInitialized))
     );
-    assert_eq!(sep8_ok, true);
-
-    // Sanction check
-    client.set_sanction_status(&admin, &institutional_investor, &true);
-    let result = client.try_verify_institutional_access(&institutional_investor);
-    assert!(result.is_err());
 }
