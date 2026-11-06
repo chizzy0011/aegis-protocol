@@ -13,24 +13,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust Toolchain
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-unknown-unknown
+          toolchain: stable
+          targets: wasm32v1-none
 
-      - name: Cargo Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
 
-      - name: Run Contract Tests
-        run: cargo test --all
+      # Repo, credit and settlement tests load sibling contracts via contractimport!
+      - name: Build WASM Contracts
+        run: cargo build --target wasm32v1-none --release
 
-      - name: Check Wasm Compilation
-        run: cargo check --target wasm32-unknown-unknown --release
+      - name: Run Cargo Tests
+        run: cargo test --workspace --lib

@@ -8,24 +8,23 @@ on:
 
 jobs:
   build:
-    name: TypeScript Build & Typecheck
+    name: TypeScript Build & Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
 
-      - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+      - run: npm ci
 
-      - name: Build SDK
-        run: npm run build --workspace=@aegis-protocol/sdk
+      - name: Build and test SDK
+        run: npm run test --workspace=@aegis-protocol/sdk
 
-      - name: Build Margin Watcher
-        run: npm run build --workspace=@aegis-protocol/margin-watcher
+      - name: Build repo watcher
+        run: npm run build --workspace=@aegis-protocol/repo-watcher
 
-      - name: Build Web App
+      - name: Build web app
         run: npm run build --workspace=@aegis-protocol/web

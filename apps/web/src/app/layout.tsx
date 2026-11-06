@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Aegis Protocol | Institutional DvP Repo & Structured Credit',
+  title: 'Aegis Protocol',
   description:
-    'Institutional Collateral Clearing, Bilateral DvP Repo, and Emerging Market Structured Credit on Stellar Soroban',
+    'Bilateral DvP repo and two-tranche trade credit on Stellar Soroban, with on-chain compliance gating. Live on testnet.',
 };
 
 export default function RootLayout({

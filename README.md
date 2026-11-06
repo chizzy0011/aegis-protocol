@@ -1,156 +1,122 @@
-# Aegis Protocol (`aegis-protocol`)
-
-> **Institutional Collateral Clearing, Bilateral DvP Repo, and Emerging Market Structured Credit on Stellar Soroban**
+# Aegis Protocol
 
 [![Soroban Contracts CI](https://github.com/chizzy0011/aegis-protocol/actions/workflows/contracts.yml/badge.svg)](https://github.com/chizzy0011/aegis-protocol/actions/workflows/contracts.yml)
 [![SDK & Web CI](https://github.com/chizzy0011/aegis-protocol/actions/workflows/sdk-and-web.yml/badge.svg)](https://github.com/chizzy0011/aegis-protocol/actions/workflows/sdk-and-web.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Stellar Wave](https://img.shields.io/badge/Drips%20Wave-Stellar%20Program-38BDF8)](https://docs.drips.network/wave)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-Aegis Protocol is an institutional-grade financial clearinghouse built natively on **Stellar Soroban**. Aegis combines Canton-style bilateral repurchase agreements (**DvP Repo**) for tokenized sovereign debt with high-yield **structured trade credit facilities** settled directly through Stellar's global network of licensed fiat anchors.
+Secured short-term lending on Stellar Soroban: **bilateral repo with delivery-versus-payment**, **two-tranche trade-credit facilities with a senior-first repayment waterfall**, and an **on-chain compliance gate** both markets check before every action.
 
----
+- **App (Stellar testnet):** https://chizzy0011.github.io/aegis-protocol/
+- **Deployment manifest:** [deployments/testnet.json](deployments/testnet.json)
+- **Receipts from the last live end-to-end run:** [deployments/testnet-receipts.json](deployments/testnet-receipts.json)
 
-## 1. Executive Summary & Core Thesis
+## Status
 
-### The Sovereign Collateral Liquidity Trap
-Institutions hold tens of millions in tokenized Treasuries and money market funds on Stellar (such as **Franklin Templeton BENJI**, **WisdomTree Prime**, and **Spiko Euro T-Bills** `eurSAFO`). However, until now, holders could not borrow working capital (USDC/EURC) against these positions without liquidating their bonds, forfeiting yield, and triggering taxable events.
+Everything marked **live** is deployed on Stellar **testnet** and exercised by [`scripts/e2e-testnet.mjs`](scripts/e2e-testnet.mjs) with fresh accounts, real testnet XLM as collateral and Circle testnet USDC bought on the Stellar DEX. Nothing is on mainnet.
 
-On traditional Wall Street and on the Canton Network (via DTCC and Broadridge DLT), institutions conduct hundreds of billions daily in **Bilateral Repurchase Agreements (Repos)**. With the DTCC bringing tokenized securities to Stellar in 2027, Aegis delivers the foundational clearing, haircut validation, and Delivery-versus-Payment (DvP) infrastructure required by institutional desks today.
+| Capability | Status |
+|---|---|
+| Compliance registry (tier, country, sanctions, expiry) gating both markets | live (testnet) |
+| Repo: propose with collateral escrow, DvP funding, repurchase, cancel | live (testnet) |
+| Repo: liquidation by the lender after maturity | implemented and unit-tested |
+| Credit: senior/junior funding, drawdown, repayment, senior-first claims | live (testnet) |
+| Credit: cancel and refund, default after a 7-day grace period | implemented and unit-tested |
+| Settlement records of anchor off-ramps, confirmed by the anchor | implemented and unit-tested; not exercised on testnet (no anchor key) |
+| SEP-10 sign-in and SEP-24 withdrawal against the SDF test anchor | live (testnet) |
+| Price oracle / margin calls | not built. The haircut caps cash at collateral × (1 − haircut) in token units; lenders price collateral themselves |
+| KYC provider integration | not built. Testnet verification records are written by the Aegis admin |
+| Invoice verification | not built. Invoice references are borrower-supplied text |
+| Mainnet deployment, security audit | not yet |
 
-### The Non-US Structured Credit Gap
-While tokenized US debt offers ~4.5–5.0% APY, emerging market exporters and commodity producers (cocoa, coffee, soya, agricultural freight) face local commercial bank interest rates exceeding 25–30%. Aegis bridges global USDC liquidity providers with verified trade receivables via **Senior/Junior risk tranches**, disbursing local currency directly into bank accounts via Stellar's native **SEP-24 / SEP-6 fiat anchors** (Cowrie in Nigeria, Mercado Bitcoin in Brazil, Tempo in Europe, and ClickPesa in East Africa).
+## Deployed contracts (Stellar testnet)
 
----
+| Contract | Address |
+|---|---|
+| AegisCompliance | [`CAP45NFRQW5PUUKN4SL4LNRCL3Y5XKPBFWZBM2JPDU37XO5RY44WVRZL`](https://stellar.expert/explorer/testnet/contract/CAP45NFRQW5PUUKN4SL4LNRCL3Y5XKPBFWZBM2JPDU37XO5RY44WVRZL) |
+| AegisRepo (requires Accredited tier) | [`CAS6EIMV5R6V6CRCZLVQEM5ML2FIRYBOVPUK5HV5KUAZCKEJSYVUVJ5H`](https://stellar.expert/explorer/testnet/contract/CAS6EIMV5R6V6CRCZLVQEM5ML2FIRYBOVPUK5HV5KUAZCKEJSYVUVJ5H) |
+| AegisCredit (open pilot) | [`CCWPEMHF26ZZAYTRLUL5TFRFOQMOLMPNRADHB4FP2654DPQYDH2OALPE`](https://stellar.expert/explorer/testnet/contract/CCWPEMHF26ZZAYTRLUL5TFRFOQMOLMPNRADHB4FP2654DPQYDH2OALPE) |
+| AegisSettlement | [`CCFMPWEG6WZS5R6CZII7QH3N4AIP24EINM4O6DN74HPF5Z5ASVGTUARK`](https://stellar.expert/explorer/testnet/contract/CCFMPWEG6WZS5R6CZII7QH3N4AIP24EINM4O6DN74HPF5Z5ASVGTUARK) |
 
-## 2. High-Level System Architecture
+On testnet the repo collateral is native XLM and the cash leg is Circle testnet USDC (`CBIELTK6…DAMA`). Every deploy and init transaction is in [deployments/testnet.json](deployments/testnet.json).
 
-```mermaid
-flowchart TD
-    subgraph PrimeRepoDesk["Facility A: Bilateral Repo & DvP Clearing"]
-        InstitutionalHolder["Institutional Bondholder\n(Spiko, BENJI, WisdomTree)"] -->|1. Pledges Collateral| RepoContract["Soroban Repo Engine\n(aegis-repo)"]
-        RepoContract -->|2. Validates Haircut & Term| Escrow["Collateral Escrow Vault"]
-        CashLender["USDC / EURC Cash Lender"] -->|3. Supplies Cash| DvPExecution["Atomic DvP Settlement"]
-        DvPExecution -->|4. Cash Disbursed| InstitutionalHolder
-        InstitutionalHolder -->|5. Matured Repurchase (Principal + Repo APR)| RepoContract
-        RepoContract -->|6. Releases Collateral| InstitutionalHolder
-    end
+### Verified run
 
-    subgraph StructuredCredit["Facility B: Emerging Market Trade Credit"]
-        Exporter["Commodity Exporter\n(Cocoa, Soya, Freight)"] -->|1. Tokenizes Invoices| CreditPool["Soroban Credit Pool\n(aegis-credit)"]
-        GlobalSeniorLP["Senior LPs (Protected: 8.5% APY)"] -->|2a. Senior Tranche| TrancheEngine["Tranche Waterfall Engine"]
-        GlobalJuniorLP["Junior LPs (Equity: 16.5% APY)"] -->|2b. First-Loss Tranche| TrancheEngine
-        TrancheEngine -->|3. Pooled Capital| SettlementHook["Anchor Settlement Contract\n(aegis-settlement)"]
-        SettlementHook -->|4. SEP-24 / SEP-6 Off-Ramp| FiatAnchors["Stellar Fiat Anchors\n(Cowrie, Mercado Bitcoin, Tempo)"]
-        FiatAnchors -->|5. Local Bank Payout (NGN, BRL, EUR)| Exporter
-        Exporter -->|6. Invoice Repaid by Off-Taker| SettlementHook
-        SettlementHook -->|7. Waterfall Repayment| TrancheEngine
-    end
+The last end-to-end run ([receipts](deployments/testnet-receipts.json)) checked 28 on-chain conditions across 19 transactions, including:
 
-    subgraph ComplianceGate["Institutional Compliance & Regulation"]
-        SEP8Gate["Soroban SEP-8 Compliance Contract\n(aegis-compliance)"]
-        SEP8Gate -.->|Whitelists & Sanctions Check| RepoContract
-        SEP8Gate -.->|Accredited Investor Verification| CreditPool
-    end
-```
+- unverified borrower and lender rejected with `NotEligible`, then verified by the compliance admin
+- [repo #1 proposed](https://stellar.expert/explorer/testnet/tx/1014c5253050f0befc1142ae8241f43d6b92fd7bd47935182d07e9c872733672) with 100 XLM escrowed, [funded by DvP](https://stellar.expert/explorer/testnet/tx/75c9be9258ab825e8c40d4725a403ba10578de33431b847d3c655f26c45cfd2e) (10 USDC to the borrower in the same transaction), a third-party repurchase rejected, then [repurchased by the borrower](https://stellar.expert/explorer/testnet/tx/7265c63e9ecc533752c0859f42256bb251651ac2f96a5b366e6bd41ee9d10860)
+- [repo #2 cancelled](https://stellar.expert/explorer/testnet/tx/9aec88cba55a2808beac332ae97804c48e9fa485428537faef39eca323fec88a) with the collateral returned
+- [facility #1](https://stellar.expert/explorer/testnet/tx/039df499c651050ca8928ef6753a982c889bb6e74c8d5355a8820410c536c55f) funded senior and junior, [drawn](https://stellar.expert/explorer/testnet/tx/2dbb4ddfa4f3f544b73a02f7e546bb40f2a75a23991e3448eace7f797ba8d614), a partial repayment paid entirely to senior, then [repaid in full](https://stellar.expert/explorer/testnet/tx/5bb45560bd4be6970faedc9d43cbd29436bb62bcb1f258a629e8583b2912e53d) and [claimed by junior with interest](https://stellar.expert/explorer/testnet/tx/c8a47c150b3ef2ea324e896a447803dd9d6ce76694feddaf6307dfd47a2a761f)
 
----
+## How it works
 
-## 3. Protocol Facilities
+**Compliance.** The admin (the KYC provider) records each participant's tier (1 Retail, 2 Accredited, 3 Institutional), country, sanction status and expiry. `tier_of(account)` returns 0 for unknown, sanctioned or expired accounts. Each market has a `required_tier` (0 = open) that it checks before proposals, funding and deposits. Settlement of an existing repo is not gated, so a later sanction can't trap collateral.
 
-### Facility A: Canton-Grade Bilateral Repo (`contracts/repo`)
-* **Underlying Collateral**: Sovereign T-Bills and money market funds (Spiko `eurSAFO`, Franklin Templeton `BENJI`, WisdomTree).
-* **Haircut Model**: Dynamic haircuts (2.0% for AAA sovereign paper; tiered based on duration and volatility).
-* **Settlement**: 100% atomic Delivery-versus-Payment (DvP) within a single Soroban ledger invocation.
-* **Maturity Terms**: Overnight (24h), 7-day, 14-day, and 30-day fixed-term agreements with automatic liquidation upon grace period expiration.
+**Repo.** The borrower calls `propose_repo`, which escrows the collateral and fixes the cash amount, rate, term and haircut; the repurchase price is computed up front. A lender calls `execute_dvp`: the cash goes to the borrower in the same transaction that records the lender. Only the borrower can `settle_repurchase` (principal plus interest to the lender, collateral back). After maturity the lender can `liquidate_default` and take the collateral. An unfunded proposal can be cancelled.
 
-### Facility B: Emerging Market Structured Credit (`contracts/credit`)
-* **Underlying Collateral**: Verified export invoices, customs declarations, and digital bills of lading (SEP-41).
-* **Tranche Waterfall Architecture**:
-  * **Senior Tranche (Protected)**: 70–85% of facility. Earns 8.0–9.5% APY. First-loss protected by junior equity.
-  * **Junior Tranche (First-Loss Equity)**: 15–30% of facility. Earns 16.0–19.0% APY. Absorbs initial impairment.
-* **Fiat Settlement Hooks**: Automatic disbursement via Stellar anchors into recipient bank accounts across Africa, Latin America, and Europe.
+**Credit.** The borrower opens a facility with senior and junior targets and APRs. Investors `deposit` into either tranche; when both are full the borrower `drawdown`s the USDC. Anyone can `repay` (capped at what is owed). Repayments are distributed senior-first: senior principal plus interest is covered before junior receives anything, and investors `claim` their share whenever more has been repaid. A facility that isn't drawn can be cancelled and refunded; one that is unpaid 7 days past due can be marked defaulted, and later repayments still flow down the waterfall.
 
-### Compliance Layer: Institutional Gatekeeper (`contracts/compliance`)
-* **SEP-8 Transfer Approval**: Every secondary bond movement and tranche position transfer requires on-chain accredited investor attestation.
-* **Real-Time Sanctions Screening**: Rejects interactions from sanctioned entities or non-FATF compliant jurisdictions.
+**Settlement.** The borrower of a drawn facility can record an off-ramp through a registered anchor using the anchor's SEP-24 transaction id (bank details never go on-chain); only that anchor's key can confirm it. No funds move through this contract.
 
----
+## Security properties and the tests that check them
 
-## 4. Repository Structure
+| Property | Test |
+|---|---|
+| Only the borrower can repurchase; a third party can't pay the debt and take the collateral | `repo::test_third_party_cannot_settle_and_take_collateral` |
+| Collateral leaves escrow only via repurchase, cancel or post-maturity liquidation | `repo::test_cancel_returns_collateral_only_while_pending`, `test_liquidation_only_by_lender_after_maturity` |
+| Repo terms are bounded (haircut < 100%, rate ≤ 100%/yr, term 1 min–1 yr, different tokens) | `repo::test_terms_are_validated` |
+| Both markets enforce the compliance tier on every participant | `repo::test_compliance_tier_gates_both_sides`, `credit::test_compliance_tier_gates_borrowers_and_investors` |
+| Senior is paid before junior; claims are exact and incremental; nothing is stranded | `credit::test_waterfall_pays_senior_first_and_junior_absorbs_losses`, `test_full_lifecycle_pays_both_tranches_with_interest` |
+| Repayments are capped at the amount owed | `credit::test_repayment_is_capped_at_amount_owed` |
+| Undrawn facilities can be cancelled and every deposit refunded | `credit::test_cancel_and_refund_before_drawdown` |
+| Only the facility's borrower records payouts; only the named anchor confirms | `settlement::test_only_the_facility_borrower_can_record_payouts`, `test_borrower_records_payout_after_drawdown_and_anchor_confirms` |
+
+Records live in persistent storage with TTL extension; the counters and config live in instance storage.
+
+## Repository
 
 ```
-aegis-protocol/
-├── contracts/
-│   ├── repo/           # Bilateral Repurchase Agreement & DvP Engine (Rust)
-│   ├── credit/         # Structured Trade Finance Tranche Pool (Rust)
-│   ├── compliance/     # Institutional KYC & SEP-8 Compliance Gatekeeper (Rust)
-│   └── settlement/     # Stellar SEP-24 / SEP-6 Fiat Anchor Dispatch (Rust)
-├── packages/
-│   └── sdk/            # TypeScript SDK (@aegis-protocol/sdk)
-├── services/
-│   └── margin-watcher/ # Oracle Margin Monitor & Liquidator Daemon
-├── apps/
-│   └── web/            # Institutional Next.js 14 Trading & Clearing Portal
-├── issues/
-│   ├── issues.json     # 160 Curated Issues for Drips Wave
-│   ├── ISSUES_CATALOG.md # Formatted Markdown Issue Catalog
-│   └── seed-issues.js  # Automated GitHub Seeding Script
-└── .github/workflows/
-    ├── contracts.yml   # Rust & Soroban Contracts CI
-    └── sdk-and-web.yml # TypeScript, SDK & Web CI
+contracts/
+  compliance/   investor registry and tier_of() gate
+  repo/         bilateral DvP repo
+  credit/       two-tranche facilities with a senior-first waterfall
+  settlement/   anchor off-ramp records
+packages/sdk/   @aegis-protocol/sdk: contract client, DEX helpers, SEP-10/24
+services/repo-watcher/  reports pending, due and past-maturity repos from chain state
+apps/web/       Next.js app (Freighter) on GitHub Pages
+scripts/        deploy.mjs (resumable) and e2e-testnet.mjs (live run)
+deployments/    testnet manifest and receipts
 ```
 
----
+## Development
 
-## 5. Drips Wave Program: 160-Issue Backlog
+Prerequisites: Rust with the `wasm32v1-none` target, Node.js 22.
 
-Aegis Protocol is configured for the **Drips Stellar Wave Program** with **160 distinct engineering issues** totaling **24,850 Points**:
-
-| Complexity Tier | Points Per Issue | Total Issues | Tier Subtotal |
-| :--- | :---: | :---: | :---: |
-| **High** | 200 Pts | 65 | 13,000 Pts |
-| **Medium** | 150 Pts | 55 | 8,250 Pts |
-| **Trivial** | 100 Pts | 40 | 4,000 Pts |
-| **Total Backlog** | — | **160 Issues** | **24,850 Pts** |
-
-For the complete breakdown across all 8 modules, see the [Issues Catalog](file:///C:/Users/lenovo/aegis-protocol/issues/ISSUES_CATALOG.md).
-
----
-
-## 6. Build and Verification
-
-### Prerequisites
-* Rust toolchain (stable) with `wasm32-unknown-unknown` target.
-* Node.js v20+ or v22+.
-* GitHub CLI (`gh`) for issue syncing.
-
-### Build Contracts & Run Test Suite
 ```bash
-# Run complete Soroban contract test suite
-cargo test --all
+npm install
 
-# Compile contracts to Wasm
-cargo build --target wasm32-unknown-unknown --release
+# Contracts: build the wasm first (tests import sibling contracts), then test
+npm run contracts:test
+
+# SDK unit tests
+npm run test --workspace=@aegis-protocol/sdk
+
+# Web app
+npm run dev --workspace=@aegis-protocol/web
+
+# Deploy to testnet (creates a funded admin key in the gitignored .env on first run)
+npm run contracts:build && npm run build --workspace=@aegis-protocol/sdk
+npm run deploy:testnet
+
+# Live end-to-end run (needs AEGIS_ADMIN_SECRET in .env for the compliance steps)
+npm run e2e:testnet
+
+# Repo watcher
+npm run build --workspace=@aegis-protocol/repo-watcher && node services/repo-watcher/dist/index.js
 ```
 
-### Build SDK, Relayer & Institutional Web Portal
-```bash
-# Install workspace dependencies
-npm install --legacy-peer-deps
+Never commit `.env` or paste secret keys anywhere; it is gitignored.
 
-# Build TypeScript SDK
-npm run build --workspace=@aegis-protocol/sdk
+## License
 
-# Build Margin Watcher Daemon
-npm run build --workspace=@aegis-protocol/margin-watcher
-
-# Build Next.js Web Application
-npm run build --workspace=@aegis-protocol/web
-```
-
----
-
-## 7. License
-
-Licensed under the [Apache License, Version 2.0](file:///C:/Users/lenovo/aegis-protocol/LICENSE).
+Apache-2.0.
