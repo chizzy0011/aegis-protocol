@@ -1,0 +1,123 @@
+[
+  {
+    "network": "testnet",
+    "ranAt": "2026-11-06T13:39:16.305Z",
+    "account": "GC6Y7PWOV7MBB6PS4EEEZAV6RJ7DGHDNJRBF5V2XYJXGTM6DZMY32FCR",
+    "receipts": [
+      {
+        "step": "borrower: swap XLM for USDC on the Stellar DEX",
+        "txHash": "fd81bd1ba61c90c6385f831cd5f297dab6a8f59587a3291fd66326377ca70a47",
+        "ledger": 5589661,
+        "detail": "10 XLM -> 7.7935472 USDC"
+      },
+      {
+        "step": "lender: swap XLM for USDC on the Stellar DEX",
+        "txHash": "42076458c05d007dda66aed7617946a24a8e095dad0db4883e2f1ec1bafee36f",
+        "ledger": 5589666,
+        "detail": "20 XLM -> 15.5870892 USDC"
+      },
+      {
+        "step": "senior investor: swap XLM for USDC on the Stellar DEX",
+        "txHash": "40e031c4381eb76c6ba4227e7111f00300f209fe4881a68b3f33695e437e2b3c",
+        "ledger": 5589671,
+        "detail": "10 XLM -> 7.7935419 USDC"
+      },
+      {
+        "step": "junior investor: swap XLM for USDC on the Stellar DEX",
+        "txHash": "94aa5deaff8c92f21933668ce175b4926c83cf68b36b19c85c0e0d7dcf4de602",
+        "ledger": 5589675,
+        "detail": "5 XLM -> 3.8967703 USDC"
+      },
+      {
+        "step": "admin: compliance.set_investor_tier(borrower, 2)",
+        "txHash": "e24b631525d19d4136d3bbbf4afb2e3ab7e38f8b829afcb4cc382cf655344efb",
+        "ledger": 5589678,
+        "detail": "testnet KYC record, expires in 7 days"
+      },
+      {
+        "step": "borrower: repo.propose_repo #1",
+        "txHash": "1014c5253050f0befc1142ae8241f43d6b92fd7bd47935182d07e9c872733672",
+        "ledger": 5589683,
+        "detail": "100 XLM collateral, 10 USDC requested, 5% APR, 1 hour, 20% haircut"
+      },
+      {
+        "step": "admin: compliance.set_investor_tier(lender, 3)",
+        "txHash": "193e143605b4bcb7cfec9fddde105516af84439fd8321d93ff08816498a3ec28",
+        "ledger": 5589689,
+        "detail": "testnet KYC record, expires in 7 days"
+      },
+      {
+        "step": "lender: repo.execute_dvp #1",
+        "txHash": "75c9be9258ab825e8c40d4725a403ba10578de33431b847d3c655f26c45cfd2e",
+        "ledger": 5589692,
+        "detail": "10 USDC to borrower; repurchase 10.000057 USDC"
+      },
+      {
+        "step": "borrower: repo.settle_repurchase #1",
+        "txHash": "7265c63e9ecc533752c0859f42256bb251651ac2f96a5b366e6bd41ee9d10860",
+        "ledger": 5589698,
+        "detail": "10.000057 USDC to lender, 100 XLM back to borrower"
+      },
+      {
+        "step": "borrower: repo.cancel_repo #2",
+        "txHash": "9aec88cba55a2808beac332ae97804c48e9fa485428537faef39eca323fec88a",
+        "ledger": 5589706,
+        "detail": "50 XLM collateral returned"
+      },
+      {
+        "step": "borrower: credit.create_facility #1",
+        "txHash": "039df499c651050ca8928ef6753a982c889bb6e74c8d5355a8820410c536c55f",
+        "ledger": 5589709,
+        "detail": "8 USDC across two tranches, 1 hour"
+      },
+      {
+        "step": "senior investor: credit.deposit (senior)",
+        "txHash": "5806ee23ddc05261e510c822918a7a10a1f5e5790f40cb3d0ef2e1a2db85f179",
+        "ledger": 5589713,
+        "detail": "6 USDC"
+      },
+      {
+        "step": "junior investor: credit.deposit (junior)",
+        "txHash": "610f276ce14a286f9e3377a0587a2b3506d63f2026d7b94eeadc91cf4c5c781e",
+        "ledger": 5589717,
+        "detail": "2 USDC"
+      },
+      {
+        "step": "borrower: credit.drawdown #1",
+        "txHash": "2dbb4ddfa4f3f544b73a02f7e546bb40f2a75a23991e3448eace7f797ba8d614",
+        "ledger": 5589720,
+        "detail": "8 USDC to the borrower"
+      },
+      {
+        "step": "borrower: credit.repay #1",
+        "txHash": "f8a2acb6447bdbb8b5891fe9f4c7cc658a9ed384f313d31dec3ac4b3d8b370f4",
+        "ledger": 5589724,
+        "detail": "5 USDC"
+      },
+      {
+        "step": "senior investor: credit.claim #1",
+        "txHash": "bee989d096c5a7fde609595eb4dc10c24a5829c3ff0d6e71ed41130c8f04d9aa",
+        "ledger": 5589728,
+        "detail": "5 USDC"
+      },
+      {
+        "step": "borrower: credit.repay #1",
+        "txHash": "5bb45560bd4be6970faedc9d43cbd29436bb62bcb1f258a629e8583b2912e53d",
+        "ledger": 5589732,
+        "detail": "3.000114 USDC, fully repaid"
+      },
+      {
+        "step": "senior investor: credit.claim #1",
+        "txHash": "1457cb4238152ba18fba073895bdf9f0f61b27c07da68648f858f7774202f886",
+        "ledger": 5589736,
+        "detail": "1.0000684 USDC"
+      },
+      {
+        "step": "junior investor: credit.claim #1",
+        "txHash": "c8a47c150b3ef2ea324e896a447803dd9d6ce76694feddaf6307dfd47a2a761f",
+        "ledger": 5589739,
+        "detail": "2.0000456 USDC"
+      }
+    ]
+  }
+]

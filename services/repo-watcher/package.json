@@ -1,7 +1,7 @@
 {
-  "name": "@aegis-protocol/margin-watcher",
+  "name": "@aegis-protocol/repo-watcher",
   "version": "0.1.0",
-  "description": "Background Oracle Margin Watcher & Atomic Liquidator Daemon for Aegis Protocol",
+  "description": "Reads repo agreements from the chain and reports pending, active, due and liquidatable ones",
   "main": "./dist/index.js",
   "scripts": {
     "start": "tsc && node dist/index.js",
@@ -11,8 +11,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@aegis-protocol/sdk": "*",
-    "@stellar/stellar-sdk": "^12.3.0",
-    "dotenv": "^16.4.5"
+    "@stellar/stellar-sdk": "^17.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
