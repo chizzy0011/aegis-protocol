@@ -5,6 +5,7 @@ import { explorerTxUrl } from '@aegis-protocol/sdk';
 import { Button, ErrorBox, ExtLink, Loading, Stat, SuccessBox } from './ui';
 import type { TxState } from '@/lib/useSorobanTx';
 import { NETWORK, stroopsToXlm } from '@/lib/aegis';
+import { TransactionReceiptModal } from './TransactionReceiptModal';
 
 /** Shows the real simulation numbers, then signing / submission / result */
 export function TxReview({
@@ -21,6 +22,7 @@ export function TxReview({
   explainError?: (message: string) => React.ReactNode;
 }) {
   const { phase, prepared, result, error } = state;
+  const [showReceipt, setShowReceipt] = React.useState(false);
   if (phase === 'idle') return null;
 
   return (
@@ -50,11 +52,17 @@ export function TxReview({
       )}
 
       {phase === 'done' && result && (
-        <SuccessBox>
-          Confirmed in ledger {result.ledger.toLocaleString('en-US')}.{' '}
-          {describeResult?.(result.returnValue)}{' '}
-          <ExtLink href={explorerTxUrl(NETWORK, result.hash)}>View transaction</ExtLink>
-        </SuccessBox>
+        <>
+          <SuccessBox>
+            Confirmed in ledger {result.ledger.toLocaleString('en-US')}.{' '}
+            {describeResult?.(result.returnValue)}{' '}
+            <button type="button" className="underline" onClick={() => setShowReceipt(true)}>
+              View receipt
+            </button>{' '}
+            <ExtLink href={explorerTxUrl(NETWORK, result.hash)}>View transaction</ExtLink>
+          </SuccessBox>
+          {showReceipt && <TransactionReceiptModal hash={result.hash} network={NETWORK} onClose={() => setShowReceipt(false)} />}
+        </>
       )}
 
       {phase === 'error' && error && (
