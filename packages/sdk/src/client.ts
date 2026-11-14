@@ -11,6 +11,7 @@ import {
 } from '@stellar/stellar-sdk';
 import { NETWORKS, type AegisNetwork, type NetworkConfig } from './networks.js';
 import { getDeployment } from './deployments.js';
+import { AegisEventStream, type AegisClientEventStreamOptions } from './events.js';
 import {
   FACILITY_STATUSES,
   REPO_STATUSES,
@@ -421,5 +422,21 @@ export class AegisClient {
         if (action === 'deposit') return { ...base, account: data[0], amount: BigInt(data[2]) };
         return { ...base, account: data[0], amount: BigInt(data[1]) };
       });
+  }
+
+  /**
+   * Create a typed real-time Soroban RPC event stream listener bound to this client's
+   * RPC server and deployed Repo and Credit contract addresses.
+   */
+  createEventStream(options: AegisClientEventStreamOptions = {}): AegisEventStream {
+    const { contracts, ...rest } = options;
+    return new AegisEventStream({
+      ...rest,
+      server: this.server,
+      contracts: {
+        repo: contracts?.repo ?? this.deployment.contracts.repo,
+        credit: contracts?.credit ?? this.deployment.contracts.credit,
+      },
+    });
   }
 }
